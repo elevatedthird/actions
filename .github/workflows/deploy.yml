@@ -33,7 +33,7 @@ jobs:
         run: |
           git config user.name $USER_NAME
           git config user.email $USER_EMAIL
-          git remote add prod DESTINATION_REPOSITORY
+          git remote add prod $DESTINATION_REPOSITORY
           git push prod $DESTINATION_REPOSITORY_BRANCH --force
           git tag -a "${TAG}" -m "${TAG_MESSAGE}"
           git push prod $TAG
