@@ -2,7 +2,7 @@ name: Build and Deploy Artifact
 on:
   workflow_call:
     inputs:
-      config-path:
+      DESTINATION_REPOSITORY:
         required: true
         type: string
     secrets:
