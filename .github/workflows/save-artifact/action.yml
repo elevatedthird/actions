@@ -1,0 +1,16 @@
+name: "Save Artifact"
+description: "Bundles and saves the artifact into a tar file in the temp directory"
+inputs:
+  name:
+    description: 'The artifact filename'
+    required: true
+    default: 'deploy-artifact'
+runs:
+  using: "composite"
+  steps:
+    - run: tar -zcv --exclude='.git' --exclude='.gitignore' -f ${{ runner.temp }}/${{ inputs.name }}.tar .
+      shell: bash
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ runner.temp }}/${{ inputs.name }}.tar

@@ -1,0 +1,40 @@
+name: Deploy Repository
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        required: true
+        type: string
+    secrets:
+      SSH_PRIVATE_KEY:
+        required: true
+      KNOWN_HOSTS:
+        required: true
+jobs:
+  deploy:
+    name: Deploy Project
+    runs-on: ubuntu-latest
+    env:
+      DESTINATION_REPOSITORY: ${{ inputs.DESTINATION_REPOSITORY }}
+      DESTINATION_REPOSITORY_BRANCH: ${{ github.ref_name }}
+      TAG: ${{ github.ref_name }}-${{ github.run_number }}
+      TAG_MESSAGE: Github Actions build ${{ github.run_number }}
+      USER_EMAIL: github-actions@github.com
+      USER_NAME: github-actions
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          name: id_rsa
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+      - name: Tag the commit
+        run: git tag -a "${TAG}" -m "${TAG_MESSAGE}"
+      - name: Push to Remote
+        run: |
+          git config user.name $USER_NAME
+          git config user.email $USER_EMAIL
+          git remote add prod DESTINATION_REPOSITORY
+          git push prod $DESTINATION_REPOSITORY_BRANCH --force
+          git push prod $TAG
