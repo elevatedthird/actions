@@ -5,24 +5,19 @@ on:
       DESTINATION_REPOSITORY:
         required: true
         type: string
-    secrets:
-      SSH_PRIVATE_KEY:
-        required: true
-      KNOWN_HOSTS:
-        required: true
+    secrets: inherit
 jobs:
   deploy:
     name: Deploy Project
     runs-on: ubuntu-latest
     env:
-      DESTINATION_REPOSITORY: ${{ inputs.DESTINATION_REPOSITORY }}
       DESTINATION_REPOSITORY_BRANCH: ${{ github.ref_name }}
       TAG: ${{ github.ref_name }}-${{ github.run_number }}
       TAG_MESSAGE: Github Actions build ${{ github.run_number }}
       USER_EMAIL: github-actions@github.com
       USER_NAME: github-actions
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install SSH key
@@ -31,11 +26,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           name: id_rsa
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
+      - name: Install SSH client
+        run: sudo apt-get update && sudo apt-get install -y openssh-client
       - name: Push to Remote
         run: |
           git config user.name $USER_NAME
           git config user.email $USER_EMAIL
-          git remote add prod $DESTINATION_REPOSITORY
+          git remote add prod ${{ inputs.DESTINATION_REPOSITORY }}
           git push prod $DESTINATION_REPOSITORY_BRANCH --force
           git tag -a "${TAG}" -m "${TAG_MESSAGE}"
           git push prod $TAG
