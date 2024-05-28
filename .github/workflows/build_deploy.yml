@@ -10,10 +10,10 @@ jobs:
     name: Test and Build project
     runs-on: ubuntu-latest
     env:
-      node_version: '18'
-      php_version: '8.1'
+      node_version: ${{ inputs.NODE_VERSION }}
+      php_version: ${{ inputs.PHP_VERSION }}
       composer_version: '2.5.4'
-      theme_path: './docroot/themes/custom/kinetic'
+      theme_path: ${{ inputs.THEME_PATH }}
     steps:
       - uses: actions/checkout@v4
       - name: Enable Debug Logging
