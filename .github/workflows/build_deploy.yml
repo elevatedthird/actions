@@ -5,6 +5,9 @@ on:
       DESTINATION_REPOSITORY:
         type: string
         required: true
+      THEME_NAME:
+        type: string
+        required: true
 jobs:
   test_and_build:
     name: Test and Build project
@@ -13,11 +16,23 @@ jobs:
       node_version: ${{ inputs.NODE_VERSION }}
       php_version: ${{ inputs.PHP_VERSION }}
       composer_version: '2.5.4'
-      theme_path: ${{ inputs.THEME_PATH }}
     steps:
       - uses: actions/checkout@v4
       - name: Enable Debug Logging
         run: echo "ACTIONS_STEP_DEBUG=true" >> $GITHUB_ENV
+
+      - name: Set THEME_PATH env variable.
+        run: |
+          export WEBROOT=$(php -r "echo json_decode(file_get_contents('composer.json'), true)['extra']['drupal-scaffold']['locations']['web-root'];")
+          echo "THEME_PATH=$WEBROOT/themes/custom/${{ inputs.THEME_NAME }}" >> $GITHUB_ENV
+          echo ${{ env.THEME_PATH }}
+
+      - name: Install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.node_version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.THEME_PATH }}/package-lock.json
 
       - name: Install PHP
         uses: shivammathur/setup-php@v2
@@ -31,7 +46,7 @@ jobs:
         with:
           node-version: ${{ env.node_version }}
           cache: 'npm'
-          cache-dependency-path: ${{ env.theme_path }}/package-lock.json
+          cache-dependency-path: ${{ env.THEME_PATH }}/package-lock.json
 
       - name: Validate composer.json
         run: |
@@ -45,12 +60,12 @@ jobs:
       - name: Clean project.
         run: |
           composer --no-dev update
-          rm -rf ${{ env.theme_path }}/node_modules
+          rm -rf ${{ env.THEME_PATH }}/node_modules
 
       - name: Display structure of files
         run: |
           ls -la
-          ls -la ${{ env.theme_path }}
+          ls -la ${{ env.THEME_PATH }}
 
       - name: Generate Deployment Artifact
         run: |
