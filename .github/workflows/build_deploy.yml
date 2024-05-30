@@ -8,6 +8,12 @@ on:
       THEME_NAME:
         type: string
         required: true
+      NODE_VERSION:
+        type: string
+        required: true
+      PHP_VERSION:
+        type: string
+        required: true
 jobs:
   test_and_build:
     name: Test and Build project
