@@ -182,6 +182,6 @@ jobs:
           git push origin $DESTINATION_REPOSITORY_BRANCH --force
           git push origin $TAG
 
-  post_deploy:
-    uses: elevatedthird/actions/.github/workflows/post_deploy.yml@main
-    secrets: inherit
+  # post_deploy:
+  #   uses: elevatedthird/actions/.github/workflows/post_deploy.yml@main
+  #   secrets: inherit
