@@ -4,8 +4,8 @@ inputs:
   private_key:
     description: 'The private key to use for ssh-agent.'
     required: true
-  ssh_host:
-    description: 'The host to add to known_hosts.'
+  ssh_url:
+    description: 'The SSH URL to connect to.'
     required: true
   passphrase:
     description: 'The passphrase for the private key.'
@@ -16,6 +16,14 @@ runs:
   steps:
     - name: Install SSH client
       run: sudo apt-get update && sudo apt-get install -y openssh-client
+      shell: bash
+
+    # Ensure variable is formatted like user@host:port
+    - name: Get the host name from the destination repository URL
+      run: |
+        git_host=$(echo ${{ inputs.ssh_url }} | sed -n 's/.*@\([^:]*\):.*/\1/p')
+        echo "REMOTE_GIT_HOST=$git_host" >> $GITHUB_ENV
+      shell: bash
 
     - name: Add private SSH key.
       env:
@@ -24,15 +32,18 @@ runs:
         mkdir -p $HOME/.ssh
         echo "$PRIVATE_KEY" | tr -d '\r' > ~/.ssh/gh_actions
         chmod 600 ~/.ssh/gh_actions
+      shell: bash
 
     - name: Test Private key format.
       run: |
         ssh-keygen -l -f ~/.ssh/gh_actions
+      shell: bash
 
     - name: Add known hosts.
       run: |
         touch ~/.ssh/known_hosts
-        ssh-keyscan -H ${{ inputs.ssh_host }} >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ env.REMOTE_GIT_HOST }} >> ~/.ssh/known_hosts
+      shell: bash
 
     # Required for passphrase protected rsa key.
     - name: Create ask_pass file.
@@ -42,10 +53,12 @@ runs:
         touch ~/ssh_askpass
         echo "echo $KEY_PASSPHRASE" > ~/ssh_askpass
         chmod 755 ~/ssh_askpass
+      shell: bash
 
     # Use ssh-agent so we don't have to type passphrase each time.
     - name: Start ssh-agent.
       run: |
         ssh-agent -a ${{ env.SSH_AUTH_SOCK }}
         DISPLAY=None SSH_ASKPASS=~/ssh_askpass ssh-add ~/.ssh/gh_actions < /dev/null
+      shell: bash
 

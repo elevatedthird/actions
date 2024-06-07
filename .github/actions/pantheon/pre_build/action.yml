@@ -12,9 +12,11 @@ runs:
           echo "BRANCH_VALID=true" >> $GITHUB_ENV
         else
           echo "BRANCH_VALID=false" >> $GITHUB_ENV
+      shell: bash
 
     - name: Stop if Branch is Invalid
       if: env.BRANCH_VALID == 'false'
       run: |
         echo "Branch name cannot contains more than 11 characters. Stopping workflow."
         exit 1
+      shell: bash

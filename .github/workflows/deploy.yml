@@ -18,14 +18,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Dotenv Action
+        uses: falti/dotenv-action@v1.1.2
+        with:
+          export-variables: true
+          export-variables-prefix: DOTENV_
+          keys-case: bypass
+
       - name: Install SSH key
         uses: elevatedthird/actions/.github/actions/ssh-agent@main
         with:
           private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          ssh_host: ${{ env.REMOTE_GIT_HOST }}
+          ssh_url: ${{ env.DOTENV_DESTINATION_REPOSITORY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
         env:
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+
       - name: Push to Remote
         run: |
           git config user.name $USER_NAME

@@ -116,17 +116,11 @@ jobs:
           export-variables-prefix: DOTENV_
           keys-case: bypass
 
-      # Ensure variable is formatted like user@host:port
-      - name: Get the host name from the destination repository URL
-        run: |
-          git_host=$(echo ${{ env.DOTENV_DESTINATION_REPOSITORY }} | sed -n 's/.*@\([^:]*\):.*/\1/p')
-          echo "REMOTE_GIT_HOST=$git_host" >> $GITHUB_ENV
-
       - name: Install SSH key
         uses: elevatedthird/actions/.github/actions/ssh-agent@main
         with:
           private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          ssh_host: ${{ env.REMOTE_GIT_HOST }}
+          ssh_url: ${{ env.DOTENV_DESTINATION_REPOSITORY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
         env:
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}

@@ -4,6 +4,8 @@ on:
 jobs:
   pre_build:
     runs-on: ubuntu-latest
+    env:
+      SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,6 +20,15 @@ jobs:
           export-variables-prefix: DOTENV_
           keys-case: bypass
 
-      - name: Pantheon Pre Build
+      - name: Install SSH key
+        uses: elevatedthird/actions/.github/actions/ssh-agent@main
+        with:
+          private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh_url: ${{ env.DOTENV_DESTINATION_REPOSITORY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+
+      - name: Pantheon Post Deploy
         if: ${{ env.DOTENV_PLATFORM }} == 'pantheon'
         uses: elevatedthird/actions/.github/workflows/pantheon/post_deploy@main
