@@ -20,4 +20,4 @@ jobs:
 
       - name: Pantheon Pre Build
         if: ${{ env.DOTENV_PLATFORM }} == 'pantheon'
-        uses: ./.github/workflows/pantheon/post_deploy
+        uses: elevatedthird/actions/.github/workflows/pantheon/post_deploy@main

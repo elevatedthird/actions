@@ -2,6 +2,8 @@ name: Deploy Repository
 on:
   workflow_call:
 jobs:
+  pre_build:
+    uses: elevatedthird/actions/.github/workflows/pre_build.yml@main
   deploy:
     name: Deploy Project
     runs-on: ubuntu-latest
@@ -11,18 +13,19 @@ jobs:
       TAG_MESSAGE: Github Actions build ${{ github.run_number }}
       USER_EMAIL: github-actions@github.com
       USER_NAME: github-actions
+      SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
+        uses: ./gh/.github/workflows/ssh-agent
         with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          name: id_rsa
-          known_hosts: ${{ secrets.KNOWN_HOSTS }}
-      - name: Install SSH client
-        run: sudo apt-get update && sudo apt-get install -y openssh-client
+          private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh_host: ${{ env.REMOTE_GIT_HOST }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
       - name: Push to Remote
         run: |
           git config user.name $USER_NAME
@@ -31,3 +34,6 @@ jobs:
           git push prod $DESTINATION_REPOSITORY_BRANCH --force
           git tag -a "${TAG}" -m "${TAG_MESSAGE}"
           git push prod $TAG
+  post_deploy:
+    uses: elevatedthird/actions/.github/workflows/post_deploy.yml@main
+    secrets: inherit

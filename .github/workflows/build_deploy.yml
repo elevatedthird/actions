@@ -3,7 +3,7 @@ on:
   workflow_call:
 jobs:
   pre_build:
-    uses: ./.github/workflows/pre_build.yml
+    uses: elevatedthird/actions/.github/workflows/pre_build.yml@main
 
   test_and_build:
     name: Test and Build project
@@ -127,7 +127,7 @@ jobs:
         with:
           private_key: ${{ secrets.SSH_PRIVATE_KEY }}
           ssh_host: ${{ env.REMOTE_GIT_HOST }}
-          passphrase: ${{ secrets.PASSWORD }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
         env:
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
 
@@ -183,5 +183,5 @@ jobs:
           git push origin $TAG
 
   post_deploy:
-    uses: ./.github/workflows/post_deploy.yml
+    uses: elevatedthird/actions/.github/workflows/post_deploy.yml@main
     secrets: inherit
