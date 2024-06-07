@@ -1,0 +1,40 @@
+name: Post Deploy Pantheon project
+description: Post Deploy Pantheon site
+inputs:
+  PANTHEON_SITE:
+    description: 'The Pantheon site name.'
+    required: true
+    type: string
+runs:
+  using: "composite"
+  steps:
+    - name: Set Environment Variable
+      id: setenv
+      run: echo "PANTHEON_ENV=$(if [ '${{ github.ref }}' == 'refs/heads/master' ]; then echo 'dev'; else echo '${{ github.ref_name }}'; fi)" >> $GITHUB_ENV
+
+    - name: Check Environment
+      if: env.PANTHEON_ENV == ''
+      run: |
+        echo "Stopping workflow as PANTHEON_ENV is set to 'other'."
+        exit 1
+    - name: Install Terminus
+      uses: pantheon-systems/terminus-github-actions@main
+      with:
+        pantheon-machine-token: ${{ secrets.TERMINUS_TOKEN }}
+
+    - name: Install SSH key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        name: id_rsa
+        known_hosts: ${{ secrets.KNOWN_HOSTS }}
+
+    - name: Install SSH client
+      run: sudo apt-get update && sudo apt-get install -y openssh-client
+
+    - name: Terminus Drush Updates
+      run: |
+        terminus env:wake ${{ vars.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }}
+        terminus env:code-rebuild ${{ vars.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }}
+        terminus drush ${{ inputs.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }} -- deploy
+        terminus env:clear-cache ${{ inputs.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }}

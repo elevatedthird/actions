@@ -1,0 +1,18 @@
+name: Run Pre Build steps.
+description: Run steps before the artifact is generated.
+inputs:
+  PLATFORM:
+    description: 'The target hosting provider.'
+    required: true
+    options:
+      - pantheon
+      - platform
+      - acquia
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pantheon Pre Build
+      if: ${{ env.PLATFORM }} == 'pantheon'
+      uses: ./.github/workflows/pantheon/pre_build
+      secrets: inherit

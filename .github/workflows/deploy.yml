@@ -1,11 +1,6 @@
 name: Deploy Repository
 on:
   workflow_call:
-    inputs:
-      DESTINATION_REPOSITORY:
-        required: true
-        type: string
-    secrets: inherit
 jobs:
   deploy:
     name: Deploy Project

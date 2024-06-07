@@ -1,0 +1,51 @@
+name: Install ssh key and start ssh agent.
+description: Installs a password protected private ssh key.
+inputs:
+  private_key:
+    description: 'The private key to use for ssh-agent.'
+    required: true
+  ssh_host:
+    description: 'The host to add to known_hosts.'
+    required: true
+  passphrase:
+    description: 'The passphrase for the private key.'
+    required: true
+  
+runs:
+  using: "composite"
+  steps:
+    - name: Install SSH client
+      run: sudo apt-get update && sudo apt-get install -y openssh-client
+
+    - name: Add private SSH key.
+      env:
+        PRIVATE_KEY: ${{ inputs.private_key }}
+      run: |
+        mkdir -p $HOME/.ssh
+        echo "$PRIVATE_KEY" | tr -d '\r' > ~/.ssh/gh_actions
+        chmod 600 ~/.ssh/gh_actions
+
+    - name: Test Private key format.
+      run: |
+        ssh-keygen -l -f ~/.ssh/gh_actions
+
+    - name: Add known hosts.
+      run: |
+        touch ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ inputs.ssh_host }} >> ~/.ssh/known_hosts
+
+    # Required for passphrase protected rsa key.
+    - name: Create ask_pass file.
+      env:
+        KEY_PASSPHRASE: ${{ inputs.passphrase }}
+      run: |
+        touch ~/ssh_askpass
+        echo "echo $KEY_PASSPHRASE" > ~/ssh_askpass
+        chmod 755 ~/ssh_askpass
+
+    # Use ssh-agent so we don't have to type passphrase each time.
+    - name: Start ssh-agent.
+      run: |
+        ssh-agent -a ${{ env.SSH_AUTH_SOCK }}
+        DISPLAY=None SSH_ASKPASS=~/ssh_askpass ssh-add ~/.ssh/gh_actions < /dev/null
+

@@ -1,44 +1,55 @@
 name: Build and Deploy Artifact
 on:
   workflow_call:
-    inputs:
-      DESTINATION_REPOSITORY:
-        type: string
-        required: true
-      THEME_NAME:
-        type: string
-        required: true
-      NODE_VERSION:
-        type: string
-        required: true
-      PHP_VERSION:
-        type: string
-        required: true
 jobs:
+  pre_build:
+    name: Pre Build project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Dotenv Action
+        uses: falti/dotenv-action@v1.1.2
+        with:
+          path: .env
+          export-variables: true
+          export-variables-prefix: DOTENV_
+          keys-case: bypass
+
+      - name: Pre build project
+        uses: ./.github/workflows/pre_build
+        secrets: inherit
+        with:
+          PLATFORM: ${{ env.DOTENV_PLATFORM }}
+
+
   test_and_build:
     name: Test and Build project
     runs-on: ubuntu-latest
+    needs: pre_build
     env:
-      node_version: ${{ inputs.NODE_VERSION }}
-      php_version: ${{ inputs.PHP_VERSION }}
       composer_version: '2.5.4'
     steps:
       - uses: actions/checkout@v4
+      - name: Dotenv Action
+        uses: falti/dotenv-action@v1.1.2
+        with:
+          path: .env
+          export-variables: true
+          export-variables-prefix: DOTENV_
+          keys-case: bypass
+
       - name: Enable Debug Logging
         run: echo "ACTIONS_STEP_DEBUG=true" >> $GITHUB_ENV
 
       - name: Set THEME_PATH env variable.
         run: |
           export WEBROOT=$(php -r "echo json_decode(file_get_contents('composer.json'), true)['extra']['drupal-scaffold']['locations']['web-root'];")
-          echo "THEME_PATH=$WEBROOT/themes/custom/${{ inputs.THEME_NAME }}" >> $GITHUB_ENV
+          echo "THEME_PATH=$WEBROOT/themes/custom/${{ env.DOTENV_THEME_NAME }}" >> $GITHUB_ENV
           echo ${{ env.THEME_PATH }}
-
-      - name: Install node
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.node_version }}
-          cache: 'npm'
-          cache-dependency-path: ${{ env.THEME_PATH }}/package-lock.json
 
       - name: Install PHP
         uses: shivammathur/setup-php@v2
@@ -47,10 +58,10 @@ jobs:
           tools: composer:${{ env.composer_version }}
           extensions: gd, imagick
 
-      - name: Install node
+      - name: Install Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.node_version }}
+          node-version: ${{ env.DOTENV_NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: ${{ env.THEME_PATH }}/package-lock.json
 
@@ -58,30 +69,33 @@ jobs:
         run: |
           composer validate
 
-      - name: Install composer dependencies. # fix why patches won't install
+      - name: Install composer dependencies.
         continue-on-error: true
         run: |
           composer install --prefer-dist --no-progress -o -n
 
       - name: Clean project.
         run: |
-          composer --no-dev update
+          # composer --no-dev update
           rm -rf ${{ env.THEME_PATH }}/node_modules
-
-      - name: Display structure of files
-        run: |
-          ls -la
-          ls -la ${{ env.THEME_PATH }}
+          rm -rf .editorconfig .env .github .git .gitattributes .gitignore .lando.yml .tugboat
 
       - name: Generate Deployment Artifact
         run: |
-          sudo apt-get update
-          sudo apt-get install -y rsync
           mkdir -p /tmp/deploy-artifact
-          rsync -a --delete --include='*/' --include='.platform' --include='.platform.app.yaml' --include='.environment' --exclude='.*' $GITHUB_WORKSPACE/ /tmp/deploy-artifact/
+          mv $GITHUB_WORKSPACE/{.[!.],}* /tmp/deploy-artifact/
           tar -czf deploy-artifact.tar.gz -C /tmp deploy-artifact
           mkdir -p artifacts
           mv deploy-artifact.tar.gz artifacts/
+
+      # - name: Inspect tar files
+      #   run: |
+      #     mkdir -p untar
+      #     mkdir -p test
+      #     tar -xf ./artifacts/deploy-artifact.tar.gz -C untar
+      #     mv untar/deploy-artifact/{.[!.],}* test
+      #     ls -la test
+      #     ls -la test/docroot/themes/custom/kinetic
 
       - name: Upload Deployment Artifact
         if: ${{ !env.ACT }}
@@ -101,28 +115,48 @@ jobs:
       COMMIT_MESSAGE: Github Actions build ${{ github.run_number }}
       USER_EMAIL: github-actions@github.com
       USER_NAME: github-actions
+      SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     steps:
       - name: Enable Debug Logging
         run: echo "ACTIONS_STEP_DEBUG=true" >> $GITHUB_ENV
-      - name: Install SSH client
-        run: sudo apt-get update && sudo apt-get install -y openssh-client
 
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
+      - uses: actions/checkout@v4
         with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          name: id_rsa
-          known_hosts: unnecessary
+          fetch-depth: 0
+          sparse-checkout: |
+            .env
+            .github
+          sparse-checkout-cone-mode: false
+          path: gh
+
+      - name: Dotenv Action
+        uses: falti/dotenv-action@v1.1.2
+        with:
+          path: gh/.env
+          export-variables: true
+          export-variables-prefix: DOTENV_
+          keys-case: bypass
 
       # Ensure variable is formatted like user@host:port
-      - name: Append destination repository host key to known_hosts.
+      - name: Get the host name from the destination repository URL
         run: |
-          git_host=$(echo ${{ inputs.DESTINATION_REPOSITORY }} | sed -n 's/.*@\([^:]*\):.*/\1/p')
-          ssh-keyscan -t rsa $git_host >> /root/.ssh/known_hosts
-        shell: bash
+          git_host=$(echo ${{ env.DOTENV_DESTINATION_REPOSITORY }} | sed -n 's/.*@\([^:]*\):.*/\1/p')
+          echo "REMOTE_GIT_HOST=$git_host" >> $GITHUB_ENV
+
+      - name: Install SSH key
+        uses: ./gh/.github/workflows/ssh-agent
+        with:
+          private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh_host: ${{ env.REMOTE_GIT_HOST }}
+          passphrase: ${{ secrets.PASSWORD }}
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+
+      - name: Clean directory
+        run: rm -rf gh
 
       - name: Clone the destination repository
-        run: git clone ${{ inputs.DESTINATION_REPOSITORY }} .
+        run: git clone ${{ env.DOTENV_DESTINATION_REPOSITORY }} .
 
       - name: Checkout a branch based on the source branch
         run: |
@@ -142,35 +176,16 @@ jobs:
       - name: Unzip Deploy Artifact into workspace
         run: |
           tar -xf ${{ runner.temp }}/deploy-artifact.tar.gz -C ${{ github.workspace }}
-          mv ${{ github.workspace }}/deploy-artifact/* ${{ github.workspace }}
-                  if [[ -d "${{ github.workspace }}/deploy-artifact/.platform" ]]; then
-            mkdir -p ${{ github.workspace }}/.platform
-            mv ${{ github.workspace }}/deploy-artifact/.platform/* ${{ github.workspace }}/.platform/
-            echo "Moved .platform"
-          else
-            echo "File does not exist."
-          fi
-          
-          if [[ -f "${{ github.workspace }}/deploy-artifact/.environment" ]]; then
-            mv ${{ github.workspace }}/deploy-artifact/.environment ${{ github.workspace }}/.environment
-            echo "Moved .environment"
-          else
-            echo "File does not exist."
-          fi
-          
-          if [[ -f "${{ github.workspace }}/deploy-artifact/.platform.app.yaml" ]]; then
-            mv ${{ github.workspace }}/deploy-artifact/.platform.app.yaml ${{ github.workspace }}/.platform.app.yaml
-            echo "Moved .platform.app.yaml"
-          else
-            echo "File does not exist."
-          fi
+          mv ${{ github.workspace }}/deploy-artifact/{.[!.],}* ${{ github.workspace }}
           rm -rf ${{ github.workspace }}/deploy-artifact
 
-      - name: Create gh_actions settings file
+      - name: Create gh_actions settings.php file
         run: |
+          WEBROOT=$(php -r "echo json_decode(file_get_contents('composer.json'), true)['extra']['drupal-scaffold']['locations']['web-root'];")
           echo "<?php \$settings['deployment_identifier'] = '${TAG}';" > settings.gh_actions.php
+          mv settings.gh_actions.php ${{ github.workspace }}/$WEBROOT/sites/default/
           chmod 644 settings.gh_actions.php
-          cat settings.gh_actions.php
+          cat ${{ github.workspace }}/$WEBROOT/sites/default/settings.gh_actions.php
 
       - name: Add files to git
         run: git add -A --force
@@ -187,3 +202,27 @@ jobs:
           git config --global push.default current
           git push origin $DESTINATION_REPOSITORY_BRANCH --force
           git push origin $TAG
+
+  post_deploy:
+    name: Post Deployment Steps
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Dotenv Action
+        uses: falti/dotenv-action@v1.1.2
+        with:
+          path: .env
+          export-variables: true
+          export-variables-prefix: DOTENV_
+          keys-case: bypass
+
+      - name: Pre build project
+        uses: ./.github/workflows/post_deploy
+        secrets: inherit
+        with:
+          PLATFORM: ${{ env.DOTENV_PLATFORM }}
