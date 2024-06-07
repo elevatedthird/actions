@@ -1,0 +1,23 @@
+name: Pre Build Project
+on:
+  workflow_call:
+jobs:
+  pre_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Dotenv Action
+        uses: falti/dotenv-action@v1.1.2
+        with:
+          path: .env
+          export-variables: true
+          export-variables-prefix: DOTENV_
+          keys-case: bypass
+
+        - name: Pantheon Pre Build
+          if: ${{ env.DOTENV_PLATFORM }} == 'pantheon'
+          uses: ./.github/workflows/pantheon/pre_build

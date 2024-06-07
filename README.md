@@ -16,3 +16,8 @@ Pushes current repository state to a hosting platform
 Contains the pre_build and post_deploy actions. These actions call other actions specific to each hosting provider
 ### pantheon
 Contains the actual pre_build and post_deploy steps
+
+## Development
+````
+act workflow_dispatch -P ubuntu-latest=shivammathur/node:latest --secret-file .secrets --env-file .env --var-file .vars
+````
