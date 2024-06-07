@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install SSH key
-        uses: elevatedthird/actions/.github/workflows/ssh-agent/action.yml@main
+        uses: elevatedthird/actions/.github/actions/ssh-agent@main
         with:
           private_key: ${{ secrets.SSH_PRIVATE_KEY }}
           ssh_host: ${{ env.REMOTE_GIT_HOST }}

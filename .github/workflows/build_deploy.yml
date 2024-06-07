@@ -122,7 +122,7 @@ jobs:
           git_host=$(echo ${{ env.DOTENV_DESTINATION_REPOSITORY }} | sed -n 's/.*@\([^:]*\):.*/\1/p')
           echo "REMOTE_GIT_HOST=$git_host" >> $GITHUB_ENV
 
-      - id: Install SSH key
+      - name: Install SSH key
         uses: elevatedthird/actions/.github/actions/ssh-agent@main
         with:
           private_key: ${{ secrets.SSH_PRIVATE_KEY }}
