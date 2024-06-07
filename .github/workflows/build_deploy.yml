@@ -157,8 +157,7 @@ jobs:
           WEBROOT=$(php -r "echo json_decode(file_get_contents('composer.json'), true)['extra']['drupal-scaffold']['locations']['web-root'];")
           echo "<?php \$settings['deployment_identifier'] = '${TAG}';" > settings.gh_actions.php
           mv settings.gh_actions.php ${{ github.workspace }}/$WEBROOT/sites/default/
-          chmod 644 settings.gh_actions.php
-          cat ${{ github.workspace }}/$WEBROOT/sites/default/settings.gh_actions.php
+          chmod 644 ${{ github.workspace }}/$WEBROOT/sites/default/settings.gh_actions.php
 
       - name: Add files to git
         run: git add -A --force
