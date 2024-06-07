@@ -123,7 +123,7 @@ jobs:
           echo "REMOTE_GIT_HOST=$git_host" >> $GITHUB_ENV
 
       - name: Install SSH key
-        uses: ./gh/.github/workflows/ssh-agent
+        uses: elevatedthird/actions/.github/workflows/ssh-agent/action.yml@main
         with:
           private_key: ${{ secrets.SSH_PRIVATE_KEY }}
           ssh_host: ${{ env.REMOTE_GIT_HOST }}
@@ -172,8 +172,9 @@ jobs:
       - name: Create a commit
         run: git commit -m "${COMMIT_MESSAGE}" --no-verify
 
-      # Todo: Only tag if pushing to main branch
+      # Only tag if pushing to main or master branch.
       - name: Tag the commit
+        if: ${{ (github.ref_name == 'main' || github.ref_name == 'master') }}
         run: git tag -a "${TAG}" -m "${TAG_MESSAGE}"
 
       - name: Push the commit to the destination repository
