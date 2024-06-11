@@ -19,5 +19,5 @@ jobs:
           keys-case: bypass
 
       - name: Pantheon Pre Build
-        if: ${{ env.DOTENV_PLATFORM }} == 'pantheon'
+        if: env.DOTENV_PLATFORM == 'pantheon'
         uses: elevatedthird/actions/.github/actions/pantheon/pre_build@main
