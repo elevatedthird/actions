@@ -48,16 +48,15 @@ jobs:
         run: |
           composer validate
 
-      - name: Install composer dependencies.
+      - name: Install composer dependencies and build theme.
         continue-on-error: true
-        run: |
-          composer install --prefer-dist --no-progress -o -n
+        run: composer install --prefer-dist --no-progress --no-dev -o -n
 
       - name: Clean project.
         run: |
           # composer --no-dev update
           rm -rf ${{ env.THEME_PATH }}/node_modules
-          rm -rf .editorconfig .env .github .git .gitattributes .gitignore .lando.yml .tugboat
+          rm -rf .editorconfig .env .github .git .gitattributes .gitignore .lando.yml
 
       - name: Generate Deployment Artifact
         run: |
@@ -66,15 +65,6 @@ jobs:
           tar -czf deploy-artifact.tar.gz -C /tmp deploy-artifact
           mkdir -p artifacts
           mv deploy-artifact.tar.gz artifacts/
-
-      # - name: Inspect tar files
-      #   run: |
-      #     mkdir -p untar
-      #     mkdir -p test
-      #     tar -xf ./artifacts/deploy-artifact.tar.gz -C untar
-      #     mv untar/deploy-artifact/{.[!.],}* test
-      #     ls -la test
-      #     ls -la test/docroot/themes/custom/kinetic
 
       - name: Upload Deployment Artifact
         if: ${{ !env.ACT }}
@@ -176,6 +166,7 @@ jobs:
           git push origin $DESTINATION_REPOSITORY_BRANCH --force
           git push origin $TAG
 
-  # post_deploy:
-  #   uses: elevatedthird/actions/.github/workflows/post_deploy.yml@main
-  #   secrets: inherit
+  post_deploy:
+    needs: deploy
+    uses: elevatedthird/actions/.github/workflows/post_deploy.yml@main
+    secrets: inherit
