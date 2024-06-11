@@ -31,4 +31,4 @@ jobs:
 
       - name: Pantheon Post Deploy
         if: ${{ env.DOTENV_PLATFORM }} == 'pantheon'
-        uses: elevatedthird/actions/.github/workflows/pantheon/post_deploy@main
+        uses: elevatedthird/actions/.github/actions/pantheon/post_deploy@main
