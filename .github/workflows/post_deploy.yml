@@ -9,10 +9,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        sparse-checkout: |
-          .env
         with:
           fetch-depth: 0
+          sparse-checkout: |
+            .env
+          sparse-checkout-cone-mode: false
 
       - name: Dotenv Action
         uses: falti/dotenv-action@v1.1.2
