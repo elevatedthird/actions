@@ -5,6 +5,10 @@ inputs:
     description: 'The Pantheon site name.'
     required: true
     type: string
+  TERMINUS_TOKEN:
+    description: 'Token to use with the Terminus cli.'
+    required: true
+    type: string
 runs:
   using: "composite"
   steps:
@@ -23,12 +27,12 @@ runs:
     - name: Install Terminus
       uses: pantheon-systems/terminus-github-actions@main
       with:
-        pantheon-machine-token: ${{ secrets.TERMINUS_TOKEN }}
+        pantheon-machine-token: ${{ inputs.TERMINUS_TOKEN }}
 
     - name: Terminus Drush Updates
       run: |
-        terminus env:wake ${{ vars.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }}
-        terminus env:code-rebuild ${{ vars.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }}
+        terminus env:wake ${{ inputs.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }}
+        terminus env:code-rebuild ${{ inputs.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }}
         terminus drush ${{ inputs.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }} -- deploy
         terminus env:clear-cache ${{ inputs.PANTHEON_SITE }}.${{ env.PANTHEON_ENV }}
       shell: bash

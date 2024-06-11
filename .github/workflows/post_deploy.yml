@@ -9,6 +9,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        sparse-checkout: |
+          .env
         with:
           fetch-depth: 0
 
@@ -32,3 +34,6 @@ jobs:
       - name: Pantheon Post Deploy
         if: env.DOTENV_PLATFORM == 'pantheon'
         uses: elevatedthird/actions/.github/actions/pantheon/post_deploy@main
+        with:
+          PANTHEON_SITE: ${{ env.DOTENV_PANTHEON_SITE }}
+          TERMINUS_TOKEN: ${{ secrets.TERMINUS_TOKEN }}
