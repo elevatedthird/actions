@@ -48,9 +48,14 @@ jobs:
         run: |
           composer validate
 
-      - name: Install composer dependencies and build theme.
+      - name: Install composer dependencies.
         continue-on-error: true
         run: composer install --prefer-dist --no-progress --no-dev -o -n
+
+      - name: Install node dependencies and build.
+        run: |
+          composer npm-install
+          composer build-theme
 
       - name: Clean project.
         run: |
