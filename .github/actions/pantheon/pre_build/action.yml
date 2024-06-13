@@ -4,19 +4,20 @@ runs:
   using: "composite"
   steps:
     - name: Ensure branch name is less than 12 characters
+      id: branch-validation
       run: |
         BRANCH_NAME=${{ github.ref_name }}
         if [[ '${{ github.ref }}' == 'refs/heads/master' ]]; then
-          echo "BRANCH_VALID=true" >> $GITHUB_ENV
+          echo "is_valid=true" >> $GITHUB_OUTPUT
         elif [[ ${BRANCH_NAME} == md-* && ${#BRANCH_NAME} -le 11 ]]; then
-          echo "BRANCH_VALID=true" >> $GITHUB_ENV
+          echo "is_valid=true" >> $GITHUB_OUTPUT
         else
-          echo "BRANCH_VALID=false" >> $GITHUB_ENV
+          echo "is_valid=false" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Stop if Branch is Invalid
-      if: env.BRANCH_VALID == 'false'
+      if: steps.branch-validation.outputs.is_valid == 'false'
       run: |
-        echo "Branch name cannot contains more than 11 characters. Stopping workflow."
+        echo "Branch name contains more than 11 characters. Stopping workflow."
         exit 1
       shell: bash
