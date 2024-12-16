@@ -33,7 +33,7 @@ jobs:
       - name: Install PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ env.php_version }}
+          php-version: ${{ env.DOTENV_PHP_VERSION }}
           tools: composer:${{ env.composer_version }}
           extensions: gd, imagick
 
