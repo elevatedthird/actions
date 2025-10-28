@@ -3,7 +3,12 @@
 This project includes reusbale workflows for building and deploying Drupal sites to Acquia, Pantheon, and Platform.
 
 ## Usage
-It's recommended to use these actions with Paragon Base. 
+It's recommended to use these actions with Paragon Base.
+You must have the following secrets in your GH repo:
+- `SSH_PASSPHRASE`
+- `SSH_PRIVATE_KEY`
+These are added to each repo at an organization level, but can be overriden. You must invite the hosting@elevaedthird account to the project's
+hosting platform so the key can access the project
 
 ## Workflows
 ### build_deploy
