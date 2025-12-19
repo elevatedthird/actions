@@ -72,7 +72,6 @@ jobs:
         run: |
           # composer --no-dev update
           rm -rf ${{ env.THEME_PATH }}/node_modules
-          rm -rf .github .git .ddev
 
       - name: Generate Deployment Artifact
         run: |
