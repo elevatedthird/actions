@@ -128,8 +128,8 @@ jobs:
         env:
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
 
-      - name: Clean directory
-        run: rm -rf gh
+      - name: Remove source repository checkout
+        run: rm -rf ${{ github.workspace }}/gh
 
       - name: Download deploy artifact
         if: ${{ !env.ACT }}
