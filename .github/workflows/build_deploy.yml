@@ -72,7 +72,7 @@ jobs:
         run: |
           # composer --no-dev update
           rm -rf ${{ env.THEME_PATH }}/node_modules
-          rm -rf .editorconfig .env .github .git .gitattributes .gitignore .lando.yml
+          rm -rf .editorconfig .env .github .git .gitattributes .gitignore .ddev
 
       - name: Generate Deployment Artifact
         run: |
@@ -95,9 +95,6 @@ jobs:
     needs: test_and_build
     env:
       DESTINATION_REPOSITORY_BRANCH: ${{ github.ref_name }}
-      TAG: ${{ github.ref_name }}-${{ github.run_number }}
-      TAG_MESSAGE: Github Actions build ${{ github.run_number }}
-      COMMIT_MESSAGE: Github Actions build ${{ github.run_number }}
       USER_EMAIL: github-actions@github.com
       USER_NAME: github-actions
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
@@ -134,17 +131,6 @@ jobs:
       - name: Clean directory
         run: rm -rf gh
 
-      - name: Clone the destination repository
-        run: git clone ${{ env.DOTENV_DESTINATION_REPOSITORY }} .
-
-      - name: Checkout a branch based on the source branch
-        run: |
-          git config user.name $USER_NAME
-          git config user.email $USER_EMAIL
-          git checkout $DESTINATION_REPOSITORY_BRANCH || git checkout -B $DESTINATION_REPOSITORY_BRANCH
-          git rm -rf .
-          git clean -fxd
-
       - name: Download deploy artifact
         if: ${{ !env.ACT }}
         uses: actions/download-artifact@v4
@@ -161,26 +147,55 @@ jobs:
       - name: Create gh_actions settings.php file
         run: |
           WEBROOT=$(php -r "echo json_decode(file_get_contents('composer.json'), true)['extra']['drupal-scaffold']['locations']['web-root'];")
-          echo "<?php \$settings['deployment_identifier'] = '${TAG}';" > settings.gh_actions.php
+          echo "<?php \$settings['deployment_identifier'] = '${DESTINATION_REPOSITORY_BRANCH}';" > settings.gh_actions.php
           mv settings.gh_actions.php ${{ github.workspace }}/$WEBROOT/sites/default/
           chmod 644 ${{ github.workspace }}/$WEBROOT/sites/default/settings.gh_actions.php
 
-      - name: Add files to git
-        run: git add -A --force
-
-      - name: Create a commit
-        run: git commit -m "${COMMIT_MESSAGE}" --no-verify
-
-      # Only tag if pushing to main or master branch.
-      - name: Tag the commit
-        if: ${{ (github.ref_name == 'main' || github.ref_name == 'master') }}
-        run: git tag -a "${TAG}" -m "${TAG_MESSAGE}"
-
-      - name: Push the commit to the destination repository
+      - name: Configure Global Git settings
         run: |
-          git config --global push.default current
-          git push origin $DESTINATION_REPOSITORY_BRANCH --force
-          git push origin $TAG
+          git config --global user.name $USER_NAME
+          git config --global user.email $USER_EMAIL
+
+      # Create a temporary branch to hold the artifacts
+      - name: Configure Remote Repository and commit changes
+        run: |
+          # Create a clean branch for artifacts
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          ARTIFACT_BRANCH="artifact-${BRANCH_NAME}"
+
+          git checkout --orphan "${ARTIFACT_BRANCH}"
+
+          # Copy full working tree into orphan branch
+          git add -A --force > /dev/null 2>&1
+
+          git commit -m "Build artifacts for ${BRANCH_NAME} (${GITHUB_SHA})"
+
+      - name: Add artifact remote
+        run: |
+          git remote add artifact "${{ env.DOTENV_DESTINATION_REPOSITORY }}"
+          git remote -v
+
+      - name: Push the branch to the destination repository
+        if: github.ref_type == 'branch'
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          ARTIFACT_BRANCH="artifact-${BRANCH_NAME}"
+
+          # Force push to remote branch with the same name
+          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME}" --force
+
+        # This might not work if you tag a commit that's not on develop or main
+      - name: Push the tag to the destination repository
+        if: github.ref_type == 'tag'
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+
+          # Create orphan tag commit
+          git checkout --orphan "artifact-tag-${TAG_NAME}"
+
+          git add -A --force > /dev/null 2>&1
+          git commit -m "Artifact build for tag ${TAG_NAME}"
+          git push artifact "HEAD:refs/tags/${TAG_NAME}" --force
 
   post_deploy:
     needs: deploy

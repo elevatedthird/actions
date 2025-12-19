@@ -42,7 +42,7 @@ runs:
     - name: Add known hosts.
       run: |
         touch ~/.ssh/known_hosts
-        ssh-keyscan -t rsa ${{ env.REMOTE_GIT_HOST }} >> ~/.ssh/known_hosts
+        ssh-keyscan -t rsa,ssh-ed25519 ${{ env.REMOTE_GIT_HOST }} >> ~/.ssh/known_hosts
       shell: bash
 
     # Required for passphrase protected rsa key.

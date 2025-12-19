@@ -1,0 +1,48 @@
+name: Test PHP composer projects.
+description: Test PHP composer projects with static analysis and coding standards.
+inputs:
+  php_version:
+    description: 'The PHP version to use for testing.'
+    required: true
+  composer_version:
+    description: 'The Composer version to use for testing.'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ inputs.php_version }}
+        tools: composer:${{ inputs.composer_version }}
+        extensions: gd, imagick
+
+    - name: Validate composer.json
+      run: composer validate
+      shell: bash
+
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Cache composer dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
+
+    - name: Install composer dependencies and dev dependencies.
+      continue-on-error: true
+      run: composer install --prefer-dist --no-progress -o -n
+      shell: bash
+
+    - name: Run PHP Stan analysis
+      run: composer phpstan
+      shell: bash
+
+    - name: Run PHPCS analysis
+      run: composer phpcs
+      shell: bash
