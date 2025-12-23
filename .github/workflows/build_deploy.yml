@@ -13,6 +13,8 @@ jobs:
       composer_version: '2.5.4'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Dotenv Action
         uses: falti/dotenv-action@v1.1.2
         with:
@@ -181,7 +183,7 @@ jobs:
           ARTIFACT_BRANCH="artifact-${BRANCH_NAME}"
 
           # Force push to remote branch with the same name
-          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME}" --force
+          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME}"
 
         # This might not work if you tag a commit that's not on develop or main
       - name: Push the tag to the destination repository
