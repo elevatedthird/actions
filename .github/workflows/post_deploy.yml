@@ -32,14 +32,6 @@ jobs:
         env:
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
 
-      - name: Add Platform.sh to known_hosts
-        if: env.DOTENV_PLATFORM == 'platform'
-        run: |
-          mkdir -p $HOME/.ssh
-          ssh-keyscan git.us.platform.sh >> $HOME/.ssh/known_hosts
-        env:
-          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
-
       - name: Pantheon Post Deploy
         if: env.DOTENV_PLATFORM == 'pantheon'
         uses: elevatedthird/actions/.github/actions/pantheon/post_deploy@main
