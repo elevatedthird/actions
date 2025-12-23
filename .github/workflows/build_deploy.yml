@@ -164,7 +164,7 @@ jobs:
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           ARTIFACT_BRANCH="artifact-${BRANCH_NAME}"
 
-          git checkout -B "${ARTIFACT_BRANCH}"
+          git checkout --orphan "${ARTIFACT_BRANCH}"
 
           # Copy full working tree into orphan branch
           git add -A --force > /dev/null 2>&1
@@ -184,7 +184,7 @@ jobs:
           ARTIFACT_BRANCH="artifact-${BRANCH_NAME}"
 
           # Force push to remote branch with the same name
-          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME} --force"
+          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME}"
 
         # This might not work if you tag a commit that's not on develop or main
       - name: Push the tag to the destination repository
@@ -193,7 +193,7 @@ jobs:
           TAG_NAME="${GITHUB_REF#refs/tags/}"
 
           # Create orphan tag commit
-          git checkout -B "artifact-tag-${TAG_NAME}"
+          git checkout --orphan "artifact-tag-${TAG_NAME}"
 
           git add -A --force > /dev/null 2>&1
           git commit -m "Artifact build for tag ${TAG_NAME}"
