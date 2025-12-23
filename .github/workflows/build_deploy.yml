@@ -183,8 +183,11 @@ jobs:
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           ARTIFACT_BRANCH="artifact-${BRANCH_NAME}"
 
-          # Force push to remote branch with the same name
-          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME} --force"
+          # Delete remote branch first to avoid history/shallow issues (safe for artifact branches)
+          git push artifact --delete "${BRANCH_NAME}" || true
+
+          # Push fresh artifact branch
+          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME}"
 
         # This might not work if you tag a commit that's not on develop or main
       - name: Push the tag to the destination repository
