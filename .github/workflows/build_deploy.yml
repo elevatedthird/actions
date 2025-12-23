@@ -112,6 +112,9 @@ jobs:
           sparse-checkout-cone-mode: false
           path: gh
 
+      - name: Ensure full git history
+        run: git fetch --unshallow || true
+
       - name: Dotenv Action
         uses: falti/dotenv-action@v1.1.2
         with:
