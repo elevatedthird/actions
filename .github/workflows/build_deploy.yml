@@ -171,9 +171,6 @@ jobs:
 
           git commit -m "Build artifacts for ${BRANCH_NAME} (${GITHUB_SHA})"
 
-          # Ensure repository is not shallow before pushing to Platform.sh
-          git fetch --unshallow || true
-          git rev-parse --is-shallow-repository
 
       - name: Add artifact remote
         run: |
@@ -187,7 +184,7 @@ jobs:
           ARTIFACT_BRANCH="artifact-${BRANCH_NAME}"
 
           # Force push to remote branch with the same name
-          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME}"
+          git push artifact "${ARTIFACT_BRANCH}:refs/heads/${BRANCH_NAME} --force"
 
         # This might not work if you tag a commit that's not on develop or main
       - name: Push the tag to the destination repository
@@ -200,7 +197,7 @@ jobs:
 
           git add -A --force > /dev/null 2>&1
           git commit -m "Artifact build for tag ${TAG_NAME}"
-          git push artifact "HEAD:refs/tags/${TAG_NAME}"
+          git push artifact "HEAD:refs/tags/${TAG_NAME} --force"
 
   post_deploy:
     needs: deploy
