@@ -171,6 +171,10 @@ jobs:
 
           git commit -m "Build artifacts for ${BRANCH_NAME} (${GITHUB_SHA})"
 
+          # Ensure repository is not shallow before pushing to Platform.sh
+          git fetch --unshallow || true
+          git rev-parse --is-shallow-repository
+
       - name: Add artifact remote
         run: |
           git remote add artifact "${{ env.DOTENV_DESTINATION_REPOSITORY }}"
