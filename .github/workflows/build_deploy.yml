@@ -196,7 +196,7 @@ jobs:
 
           git add -A --force > /dev/null 2>&1
           git commit -m "Artifact build for tag ${TAG_NAME}"
-          git push artifact "HEAD:refs/tags/${TAG_NAME}" --force
+          git push artifact "HEAD:refs/tags/${TAG_NAME}"
 
   post_deploy:
     needs: deploy
