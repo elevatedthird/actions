@@ -62,7 +62,6 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install composer dependencies.
-        continue-on-error: true
         run: composer install --prefer-dist --no-progress --no-dev -o -n
 
       - name: Install node dependencies and build.
