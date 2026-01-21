@@ -194,11 +194,7 @@ jobs:
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
 
-          # Create orphan tag commit
-          git checkout --orphan "artifact-tag-${TAG_NAME}"
-
-          git add -A --force > /dev/null 2>&1
-          git commit -m "Artifact build for tag ${TAG_NAME}"
+          # Force push to the remote tag
           git push artifact "HEAD:refs/tags/${TAG_NAME}" --force
 
   post_deploy:
